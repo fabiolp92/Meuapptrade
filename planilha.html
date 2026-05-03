@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>POI Backtest Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0E1A;
+    --surface: #111827;
+    --surface2: #1C2537;
+    --border: #1F2D45;
+    --accent: #00D4AA;
+    --accent2: #0066FF;
+    --red: #FF4757;
+    --gold: #FFD32A;
+    --text: #E8EDF5;
+    --muted: #5A6A85;
+    --win: #00D4AA;
+    --loss: #FF4757;
+  }
+
+- { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+font-family: ‘DM Sans’, sans-serif;
+background: var(–bg);
+color: var(–text);
+min-height: 100vh;
+padding-bottom: 100px;
+}
+
+/* ── HEADER ── */
+.header {
+background: linear-gradient(135deg, #0A0E1A 0%, #111827 100%);
+border-bottom: 1px solid var(–border);
+padding: 20px 16px 16px;
+position: sticky;
+top: 0;
+z-index: 100;
+backdrop-filter: blur(20px);
+}
+
+.header-top {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 12px;
+}
+
+.logo {
+font-family: ‘Space Mono’, monospace;
+font-size: 13px;
+color: var(–accent);
+letter-spacing: 2px;
+text-transform: uppercase;
+}
+
+.capital-badge {
+background: var(–surface2);
+border: 1px solid var(–accent);
+border-radius: 20px;
+padding: 4px 12px;
+font-family: ‘Space Mono’, monospace;
+font-size: 13px;
+color: var(–accent);
+}
+
+/* ── TABS ── */
+.tabs {
+display: flex;
+gap: 4px;
+background: var(–surface);
+border-radius: 12px;
+padding: 4px;
+}
+
+.tab {
+flex: 1;
+text-align: center;
+padding: 8px 4px;
+border-radius: 8px;
+font-size: 12px;
+font-weight: 600;
+color: var(–muted);
+cursor: pointer;
+transition: all 0.2s;
+border: none;
+background: none;
+}
+
+.tab.active {
+background: var(–accent2);
+color: white;
+}
+
+/* ── PAGES ── */
+.page { display: none; padding: 16px; }
+.page.active { display: block; }
+
+/* ── KPI GRID ── */
+.kpi-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+margin-bottom: 16px;
+}
+
+.kpi-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 14px;
+padding: 14px;
+position: relative;
+overflow: hidden;
+}
+
+.kpi-card::before {
+content: ‘’;
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 2px;
+background: linear-gradient(90deg, var(–accent), var(–accent2));
+}
+
+.kpi-card.full { grid-column: 1 / -1; }
+
+.kpi-label {
+font-size: 10px;
+color: var(–muted);
+letter-spacing: 1px;
+text-transform: uppercase;
+margin-bottom: 6px;
+font-weight: 600;
+}
+
+.kpi-value {
+font-family: ‘Space Mono’, monospace;
+font-size: 22px;
+font-weight: 700;
+color: var(–text);
+line-height: 1;
+}
+
+.kpi-value.green { color: var(–win); }
+.kpi-value.red { color: var(–loss); }
+.kpi-value.gold { color: var(–gold); }
+
+.kpi-sub {
+font-size: 10px;
+color: var(–muted);
+margin-top: 4px;
+}
+
+/* ── EQUITY CURVE ── */
+.chart-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 14px;
+padding: 16px;
+margin-bottom: 16px;
+}
+
+.chart-title {
+font-size: 11px;
+color: var(–muted);
+letter-spacing: 1px;
+text-transform: uppercase;
+font-weight: 600;
+margin-bottom: 12px;
+}
+
+canvas { width: 100% !important; }
+
+/* ── ASSET TABLE ── */
+.section-title {
+font-size: 11px;
+color: var(–muted);
+letter-spacing: 1px;
+text-transform: uppercase;
+font-weight: 600;
+margin: 16px 0 10px;
+}
+
+.asset-row {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 12px;
+padding: 12px 14px;
+margin-bottom: 8px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+}
+
+.asset-name {
+font-family: ‘Space Mono’, monospace;
+font-size: 13px;
+font-weight: 700;
+color: var(–text);
+margin-bottom: 2px;
+}
+
+.asset-meta {
+font-size: 11px;
+color: var(–muted);
+}
+
+.asset-pnl {
+font-family: ‘Space Mono’, monospace;
+font-size: 15px;
+font-weight: 700;
+text-align: right;
+}
+
+.asset-wr {
+font-size: 11px;
+[02/05/2026 23:29] Fabio Lopes: color: var(–muted);
+text-align: right;
+margin-top: 2px;
+}
+
+/* ── FORM ── */
+.form-section {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 16px;
+padding: 16px;
+margin-bottom: 16px;
+}
+
+.form-title {
+font-size: 12px;
+color: var(–accent);
+letter-spacing: 1px;
+text-transform: uppercase;
+font-weight: 700;
+margin-bottom: 14px;
+display: flex;
+align-items: center;
+gap: 6px;
+}
+
+.form-row {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+margin-bottom: 10px;
+}
+
+.form-row.full { grid-template-columns: 1fr; }
+
+.form-group label {
+display: block;
+font-size: 10px;
+color: var(–muted);
+letter-spacing: 1px;
+text-transform: uppercase;
+font-weight: 600;
+margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+width: 100%;
+background: var(–bg);
+border: 1px solid var(–border);
+border-radius: 10px;
+padding: 12px;
+color: var(–text);
+font-family: ‘DM Sans’, sans-serif;
+font-size: 14px;
+-webkit-appearance: none;
+outline: none;
+transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+border-color: var(–accent2);
+}
+
+.form-group select option { background: var(–surface); }
+
+.form-group textarea {
+resize: none;
+height: 80px;
+font-size: 13px;
+}
+
+/* ── RESULT TOGGLE ── */
+.result-toggle {
+display: flex;
+gap: 8px;
+margin-bottom: 10px;
+}
+
+.result-btn {
+flex: 1;
+padding: 14px;
+border-radius: 12px;
+border: 2px solid var(–border);
+background: var(–bg);
+color: var(–muted);
+font-weight: 700;
+font-size: 16px;
+cursor: pointer;
+transition: all 0.2s;
+letter-spacing: 1px;
+}
+
+.result-btn.win-selected {
+border-color: var(–win);
+background: rgba(0, 212, 170, 0.1);
+color: var(–win);
+}
+
+.result-btn.loss-selected {
+border-color: var(–loss);
+background: rgba(255, 71, 87, 0.1);
+color: var(–loss);
+}
+
+/* ── SUBMIT BTN ── */
+.btn-submit {
+width: 100%;
+padding: 16px;
+background: linear-gradient(135deg, var(–accent2), var(–accent));
+border: none;
+border-radius: 14px;
+color: white;
+font-family: ‘DM Sans’, sans-serif;
+font-size: 16px;
+font-weight: 700;
+cursor: pointer;
+letter-spacing: 0.5px;
+transition: opacity 0.2s;
+}
+
+.btn-submit:active { opacity: 0.8; }
+
+/* ── TRADES LIST ── */
+.trade-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 14px;
+padding: 14px;
+margin-bottom: 10px;
+position: relative;
+overflow: hidden;
+}
+
+.trade-card::before {
+content: ‘’;
+position: absolute;
+left: 0; top: 0; bottom: 0;
+width: 3px;
+}
+
+.trade-card.win::before { background: var(–win); }
+.trade-card.loss::before { background: var(–loss); }
+
+.trade-header {
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+margin-bottom: 8px;
+}
+
+.trade-num {
+font-family: ‘Space Mono’, monospace;
+font-size: 10px;
+color: var(–muted);
+}
+
+.trade-asset {
+font-family: ‘Space Mono’, monospace;
+font-size: 14px;
+font-weight: 700;
+color: var(–text);
+}
+
+.trade-dir {
+display: inline-block;
+padding: 2px 8px;
+border-radius: 4px;
+font-size: 10px;
+font-weight: 700;
+margin-left: 6px;
+letter-spacing: 1px;
+}
+
+.trade-dir.long { background: rgba(0,212,170,0.15); color: var(–win); }
+.trade-dir.short { background: rgba(255,71,87,0.15); color: var(–loss); }
+
+.trade-result {
+font-family: ‘Space Mono’, monospace;
+font-size: 18px;
+font-weight: 700;
+}
+
+.trade-result.win { color: var(–win); }
+.trade-result.loss { color: var(–loss); }
+
+.trade-meta {
+display: flex;
+gap: 12px;
+flex-wrap: wrap;
+}
+
+.trade-meta-item {
+font-size: 11px;
+color: var(–muted);
+}
+
+.trade-meta-item span {
+color: var(–text);
+font-weight: 500;
+}
+
+.trade-obs {
+margin-top: 8px;
+font-size: 12px;
+color: var(–muted);
+font-style: italic;
+border-top: 1px solid var(–border);
+padding-top: 8px;
+}
+
+.trade-delete {
+background: none;
+border: none;
+color: var(–muted);
+font-size: 18px;
+cursor: pointer;
+padding: 2px 6px;
+border-radius: 6px;
+line-height: 1;
+}
+
+/* ── EMPTY STATE ── */
+.empty-state {
+text-align: center;
+padding: 60px 20px;
+color: var(–muted);
+}
+
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-text { font-size: 14px; line-height: 1.6; }
+
+/* ── GUIA ── */
+.guide-card {
+background: var(–surface);
+[02/05/2026 23:29] Fabio Lopes: border: 1px solid var(–border);
+border-radius: 14px;
+padding: 16px;
+margin-bottom: 12px;
+}
+
+.guide-card-title {
+font-size: 13px;
+font-weight: 700;
+color: var(–accent);
+margin-bottom: 10px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+.guide-item {
+display: flex;
+gap: 10px;
+margin-bottom: 8px;
+align-items: flex-start;
+}
+
+.guide-item-label {
+font-size: 11px;
+font-weight: 700;
+color: var(–text);
+background: var(–surface2);
+border-radius: 6px;
+padding: 3px 8px;
+white-space: nowrap;
+min-width: 80px;
+text-align: center;
+}
+
+.guide-item-text {
+font-size: 12px;
+color: var(–muted);
+line-height: 1.5;
+padding-top: 2px;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 14px;
+padding: 16px;
+margin-bottom: 16px;
+}
+
+.progress-header {
+display: flex;
+justify-content: space-between;
+margin-bottom: 10px;
+}
+
+.progress-label { font-size: 12px; color: var(–muted); font-weight: 600; }
+.progress-count { font-family: ‘Space Mono’, monospace; font-size: 12px; color: var(–accent); }
+
+.progress-bar {
+background: var(–border);
+border-radius: 100px;
+height: 8px;
+overflow: hidden;
+}
+
+.progress-fill {
+height: 100%;
+background: linear-gradient(90deg, var(–accent2), var(–accent));
+border-radius: 100px;
+transition: width 0.5s ease;
+}
+
+.progress-milestone {
+display: flex;
+justify-content: space-between;
+margin-top: 6px;
+font-size: 10px;
+color: var(–muted);
+}
+
+/* ── TOAST ── */
+.toast {
+position: fixed;
+bottom: 110px;
+left: 50%;
+transform: translateX(-50%) translateY(20px);
+background: var(–surface2);
+border: 1px solid var(–accent);
+border-radius: 12px;
+padding: 12px 20px;
+font-size: 13px;
+font-weight: 600;
+color: var(–accent);
+opacity: 0;
+transition: all 0.3s;
+z-index: 999;
+white-space: nowrap;
+pointer-events: none;
+}
+
+.toast.show {
+opacity: 1;
+transform: translateX(-50%) translateY(0);
+}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+position: fixed;
+bottom: 0; left: 0; right: 0;
+background: rgba(10,14,26,0.95);
+border-top: 1px solid var(–border);
+display: flex;
+backdrop-filter: blur(20px);
+padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-btn {
+flex: 1;
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 12px 4px;
+cursor: pointer;
+border: none;
+background: none;
+color: var(–muted);
+font-family: ‘DM Sans’, sans-serif;
+font-size: 10px;
+font-weight: 600;
+gap: 4px;
+transition: color 0.2s;
+}
+
+.nav-btn.active { color: var(–accent); }
+.nav-icon { font-size: 20px; }
+
+/* ── STREAK BADGE ── */
+.streak-row {
+display: flex;
+gap: 8px;
+margin-bottom: 16px;
+}
+
+.streak-badge {
+flex: 1;
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 12px;
+padding: 12px;
+text-align: center;
+}
+
+.streak-val {
+font-family: ‘Space Mono’, monospace;
+font-size: 20px;
+font-weight: 700;
+margin-bottom: 2px;
+}
+
+.streak-lbl { font-size: 10px; color: var(–muted); text-transform: uppercase; letter-spacing: 1px; }
+</style>
+
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">POI // TRACKER</div>
+    <div class="capital-badge" id="capitalBadge">R$ 500,00</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showPage('dashboard', this)">📊 Dashboard</button>
+    <button class="tab" onclick="showPage('novo', this)">➕ Novo Trade</button>
+    <button class="tab" onclick="showPage('trades', this)">📋 Trades</button>
+    <button class="tab" onclick="showPage('guia', this)">📖 Guia</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- ═══════════════════════ DASHBOARD ═══════════════════════ -->
+
+<div id="page-dashboard" class="page active">
+
+  <div class="progress-wrap" style="margin-top:16px">
+    <div class="progress-header">
+      <span class="progress-label">Progresso ao vivo real</span>
+      <span class="progress-count" id="progressCount">0 / 50 trades</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="progress-milestone">
+      <span>0</span><span>25 (meta parcial)</span><span>50 ✓</span>
+    </div>
+  </div>
+[02/05/2026 23:29] Fabio Lopes: <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Capital Atual</div>
+      <div class="kpi-value green" id="kpiCapital">R$ 500</div>
+      <div class="kpi-sub" id="kpiCapitalDiff">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Win Rate</div>
+      <div class="kpi-value gold" id="kpiWR">—</div>
+      <div class="kpi-sub">mín. 40% lucrativo</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Trades</div>
+      <div class="kpi-value" id="kpiTotal">0</div>
+      <div class="kpi-sub" id="kpiWL">0W / 0L</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Profit Factor</div>
+      <div class="kpi-value" id="kpiPF">—</div>
+      <div class="kpi-sub">> 1.5 é excelente</div>
+    </div>
+    <div class="kpi-card full">
+      <div class="kpi-label">Expectativa por Trade</div>
+      <div class="kpi-value" id="kpiExp">—</div>
+      <div class="kpi-sub">Resultado médio por operação</div>
+    </div>
+  </div>
+
+  <div class="streak-row">
+    <div class="streak-badge">
+      <div class="streak-val green" id="bestStreak">0</div>
+      <div class="streak-lbl">Sequência Wins</div>
+    </div>
+    <div class="streak-badge">
+      <div class="streak-val red" id="worstStreak">0</div>
+      <div class="streak-lbl">Sequência Loss</div>
+    </div>
+    <div class="streak-badge">
+      <div class="streak-val" id="currentStreak">—</div>
+      <div class="streak-lbl">Atual</div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">📈 Curva de Equity</div>
+    <canvas id="equityChart" height="160"></canvas>
+  </div>
+
+  <div class="section-title">Resultado por Ativo</div>
+  <div id="assetRows">
+    <div class="asset-row">
+      <div><div class="asset-name">EURUSD</div><div class="asset-meta">—</div></div>
+      <div><div class="asset-pnl" style="color:var(--muted)">—</div><div class="asset-wr">—</div></div>
+    </div>
+    <div class="asset-row">
+      <div><div class="asset-name">XAUUSD</div><div class="asset-meta">—</div></div>
+      <div><div class="asset-pnl" style="color:var(--muted)">—</div><div class="asset-wr">—</div></div>
+    </div>
+    <div class="asset-row">
+      <div><div class="asset-name">GBPUSD</div><div class="asset-meta">—</div></div>
+      <div><div class="asset-pnl" style="color:var(--muted)">—</div><div class="asset-wr">—</div></div>
+    </div>
+    <div class="asset-row">
+      <div><div class="asset-name">US30</div><div class="asset-meta">—</div></div>
+      <div><div class="asset-pnl" style="color:var(--muted)">—</div><div class="asset-wr">—</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ NOVO TRADE ═══════════════════════ -->
+
+<div id="page-novo" class="page">
+  <div style="margin-top:16px">
+  <div class="form-section">
+    <div class="form-title">⚡ Novo Trade</div>
+<div class="form-row">
+  <div class="form-group">
+    <label>Ativo</label>
+    <select id="fAtivo">
+      <option value="EURUSD">EURUSD</option>
+      <option value="XAUUSD">XAUUSD</option>
+      <option value="GBPUSD">GBPUSD</option>
+      <option value="US30">US30</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Direção</label>
+    <select id="fDirecao">
+      <option value="LONG">LONG ↑</option>
+      <option value="SHORT">SHORT ↓</option>
+    </select>
+  </div>
+</div>
+
+<div class="form-row">
+  <div class="form-group">
+    <label>Data</label>
+    <input type="date" id="fData">
+  </div>
+  <div class="form-group">
+    <label>Timeframe</label>
+    <select id="fTF">
+      <option value="15min">15min</option>
+      <option value="30min">30min</option>
+      <option value="1H">1H</option>
+    </select>
+  </div>
+</div>
+
+<div class="form-row">
+  <div class="form-group">
+    <label>Preço Entrada</label>
+    <input type="number" id="fEntrada" placeholder="0.00000" step="0.00001">
+  </div>
+  <div class="form-group">
+    <label>Stop Loss</label>
+    <input type="number" id="fStop" placeholder="0.00000" step="0.00001">
+  </div>
+</div>
+
+<div class="form-row full">
+  <div class="form-group">
+[02/05/2026 23:29] Fabio Lopes: <label>Alvo (Take Profit)</label>
+    <input type="number" id="fAlvo" placeholder="0.00000" step="0.00001">
+  </div>
+</div>
+
+  </div>
+
+  <div class="form-section">
+    <div class="form-title">🎯 Resultado</div>
+    <div class="result-toggle">
+      <button class="result-btn" id="btnWin" onclick="selectResult('WIN')">WIN +R$30</button>
+      <button class="result-btn" id="btnLoss" onclick="selectResult('LOSS')">LOSS -R$10</button>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-title">📝 Contexto</div>
+    <div class="form-group">
+      <label>Contexto Identificado / Observações</label>
+      <textarea id="fObs" placeholder="Descreva a região de liquidez, o POI identificado, por que entrou ou não..."></textarea>
+    </div>
+  </div>
+
+<button class="btn-submit" onclick="salvarTrade()">REGISTRAR TRADE</button>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════ TRADES ═══════════════════════ -->
+
+<div id="page-trades" class="page">
+  <div style="margin-top:16px" id="tradesList">
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div class="empty-text">Nenhum trade registrado ainda.<br>Vá em <strong>Novo Trade</strong> para começar!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ GUIA ═══════════════════════ -->
+
+<div id="page-guia" class="page">
+  <div style="margin-top:16px">
+
+  <div class="guide-card">
+    <div class="guide-card-title">🎯 Objetivo do Backtesting</div>
+    <div class="guide-item">
+      <div class="guide-item-label">Meta mín.</div>
+      <div class="guide-item-text">Registrar 50 a 100 operações antes de operar ao vivo</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">Win Rate</div>
+      <div class="guide-item-text">Acima de 40% já é lucrativo com relação 1:3</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">Gestão</div>
+      <div class="guide-item-text">Risco fixo R$10 por trade | Alvo fixo R$30</div>
+    </div>
+  </div>
+
+  <div class="guide-card">
+    <div class="guide-card-title">🔍 Método Passo a Passo</div>
+    <div class="guide-item">
+      <div class="guide-item-label">Passo 1</div>
+      <div class="guide-item-text">Abra o ativo no MT5 e vá 3+ meses atrás no histórico</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">Passo 2</div>
+      <div class="guide-item-text">Avance candle a candle — nunca olhe o que veio depois</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">Passo 3</div>
+      <div class="guide-item-text">Identifique o contexto: região de liquidez + tendência</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">Passo 4</div>
+      <div class="guide-item-text">Aguarde o POI de continuidade no 15min</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">Passo 5</div>
+      <div class="guide-item-text">Registre aqui e avance para verificar o resultado</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">Passo 6</div>
+      <div class="guide-item-text">Após 50 trades, analise o Dashboard e ajuste a estratégia</div>
+    </div>
+  </div>
+
+  <div class="guide-card">
+    <div class="guide-card-title">⚠️ Regras da Estratégia</div>
+    <div class="guide-item">
+      <div class="guide-item-label">NÃO entrar</div>
+      <div class="guide-item-text">Se o POI aparecer mas o contexto for contrário</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">NÃO hesitar</div>
+      <div class="guide-item-text">Se contexto + POI confirmarem, executar sem emoção</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">Risco fixo</div>
+      <div class="guide-item-text">Sempre R$10 — nunca aumentar por ansiedade</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">Timeframes</div>
+      <div class="guide-item-text">Diário → 4H → 1H/30min (contexto) | 15min (gatilho)</div>
+    </div>
+  </div>
+
+  <div class="guide-card">
+[02/05/2026 23:29] Fabio Lopes: <div class="guide-card-title">📱 Ativos Recomendados — Pepperstone MT5</div>
+    <div class="guide-item">
+      <div class="guide-item-label">EURUSD</div>
+      <div class="guide-item-text">Maior liquidez do mundo, spread baixíssimo, ideal para aprender</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">XAUUSD</div>
+      <div class="guide-item-text">Ouro — alta volatilidade, ótimo para POI de continuidade</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">GBPUSD</div>
+      <div class="guide-item-text">Boa volatilidade, muito estudado em Smart Money</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-label">US30</div>
+      <div class="guide-item-text">Índice americano, tendências bem definidas</div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────
+let trades = JSON.parse(localStorage.getItem('poi_trades') || '[]');
+let selectedResult = null;
+
+// ── INIT ──────────────────────────────────────────────────────────
+document.getElementById('fData').valueAsDate = new Date();
+render();
+
+// ── NAVIGATION ──────────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'dashboard') renderChart();
+}
+
+// ── RESULT TOGGLE ──────────────────────────────────────────────
+function selectResult(r) {
+  selectedResult = r;
+  document.getElementById('btnWin').className = 'result-btn' + (r === 'WIN' ? ' win-selected' : '');
+  document.getElementById('btnLoss').className = 'result-btn' + (r === 'LOSS' ? ' loss-selected' : '');
+}
+
+// ── SAVE TRADE ──────────────────────────────────────────────────
+function salvarTrade() {
+  if (!selectedResult) { showToast('⚠️ Selecione WIN ou LOSS'); return; }
+  const trade = {
+    id: Date.now(),
+    ativo: document.getElementById('fAtivo').value,
+    direcao: document.getElementById('fDirecao').value,
+    data: document.getElementById('fData').value,
+    tf: document.getElementById('fTF').value,
+    entrada: document.getElementById('fEntrada').value || '—',
+    stop: document.getElementById('fStop').value || '—',
+    alvo: document.getElementById('fAlvo').value || '—',
+    resultado: selectedResult === 'WIN' ? 30 : -10,
+    resultado_str: selectedResult,
+    obs: document.getElementById('fObs').value
+  };
+  trades.unshift(trade);
+  localStorage.setItem('poi_trades', JSON.stringify(trades));
+  resetForm();
+  render();
+  showToast(selectedResult === 'WIN' ? '✅ WIN registrado! +R$30' : '❌ LOSS registrado. -R$10');
+}
+
+function resetForm() {
+  document.getElementById('fEntrada').value = '';
+  document.getElementById('fStop').value = '';
+  document.getElementById('fAlvo').value = '';
+  document.getElementById('fObs').value = '';
+  selectedResult = null;
+  document.getElementById('btnWin').className = 'result-btn';
+  document.getElementById('btnLoss').className = 'result-btn';
+  document.getElementById('fData').valueAsDate = new Date();
+}
+
+// ── DELETE TRADE ──────────────────────────────────────────────
+function deleteTrade(id) {
+  if (!confirm('Remover este trade?')) return;
+  trades = trades.filter(t => t.id !== id);
+  localStorage.setItem('poi_trades', JSON.stringify(trades));
+  render();
+  showToast('🗑️ Trade removido');
+}
+
+// ── RENDER ──────────────────────────────────────────────────────
+function render() {
+  const reversed = [...trades].reverse();
+  const total = trades.length;
+  const wins = trades.filter(t => t.resultado > 0).length;
+  const losses = trades.filter(t => t.resultado < 0).length;
+  const pnl = trades.reduce((s, t) => s + t.resultado, 0);
+  const capital = 500 + pnl;
+  const wr = total > 0 ? (wins / total * 100).toFixed(1) : null;
+  const grossWin = trades.filter(t => t.resultado > 0).reduce((s, t) => s + t.resultado, 0);
+  const grossLoss = Math.
+[02/05/2026 23:29] Fabio Lopes: abs(trades.filter(t => t.resultado < 0).reduce((s, t) => s + t.resultado, 0));
+  const pf = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : null;
+  const exp = total > 0 ? (pnl / total).toFixed(2) : null;
+
+  // KPIs
+  document.getElementById('capitalBadge').textContent = 'R$ ' + capital.toFixed(2);
+  document.getElementById('kpiCapital').textContent = 'R$ ' + capital.toFixed(2);
+  document.getElementById('kpiCapital').className = 'kpi-value ' + (capital >= 500 ? 'green' : 'red');
+  document.getElementById('kpiCapitalDiff').textContent = pnl >= 0 ? '+R$ ' + pnl.toFixed(2) : '-R$ ' + Math.abs(pnl).toFixed(2);
+  document.getElementById('kpiWR').textContent = wr ? wr + '%' : '—';
+  document.getElementById('kpiWR').className = 'kpi-value ' + (!wr ? 'gold' : parseFloat(wr) >= 40 ? 'green' : 'red');
+  document.getElementById('kpiTotal').textContent = total;
+  document.getElementById('kpiWL').textContent = wins + 'W / ' + losses + 'L';
+  document.getElementById('kpiPF').textContent = pf || '—';
+  document.getElementById('kpiPF').className = 'kpi-value ' + (!pf ? '' : parseFloat(pf) >= 1.5 ? 'green' : pf >= 1 ? 'gold' : 'red');
+  document.getElementById('kpiExp').textContent = exp ? 'R$ ' + exp : '—';
+  document.getElementById('kpiExp').className = 'kpi-value ' + (!exp ? '' : parseFloat(exp) >= 0 ? 'green' : 'red');
+
+  // Progress
+  const pct = Math.min(total / 50 * 100, 100);
+  document.getElementById('progressCount').textContent = total + ' / 50 trades';
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  // Streaks
+  let best = 0, worst = 0, cur = 0, curType = null;
+  let tempW = 0, tempL = 0;
+  reversed.forEach(t => {
+    if (t.resultado > 0) { tempW++; tempL = 0; best = Math.max(best, tempW); }
+    else { tempL++; tempW = 0; worst = Math.max(worst, tempL); }
+  });
+  if (trades.length > 0) {
+    const last = trades[0];
+    let streak = 0, type = last.resultado > 0 ? 'W' : 'L';
+    for (let t of trades) {
+      if ((t.resultado > 0) === (last.resultado > 0)) streak++;
+      else break;
+    }
+    document.getElementById('currentStreak').textContent = streak + type;
+    document.getElementById('currentStreak').style.color = type === 'W' ? 'var(--win)' : 'var(--loss)';
+  }
+  document.getElementById('bestStreak').textContent = best;
+  document.getElementById('worstStreak').textContent = worst;
+
+  // Asset rows
+  const ativos = ['EURUSD','XAUUSD','GBPUSD','US30'];
+  const assetHTML = ativos.map(a => {
+    const at = trades.filter(t => t.ativo === a);
+    const aw = at.filter(t => t.resultado > 0).length;
+    const apnl = at.reduce((s, t) => s + t.resultado, 0);
+    const awr = at.length > 0 ? (aw / at.length * 100).toFixed(0) + '% WR' : '—';
+    const pnlColor = apnl > 0 ? 'var(--win)' : apnl < 0 ? 'var(--loss)' : 'var(--muted)';
+    return `<div class="asset-row">
+      <div><div class="asset-name">${a}</div><div class="asset-meta">${at.length} trades</div></div>
+      <div>
+        <div class="asset-pnl" style="color:${pnlColor}">${at.length ? (apnl >= 0 ? '+' : '') + 'R$ ' + apnl.toFixed(0) : '—'}</div>
+        <div class="asset-wr">${awr}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('assetRows').innerHTML = assetHTML;
+
+  // Trades list
+  if (trades.length === 0) {
+    document.getElementById('tradesList').innerHTML = <div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Nenhum trade registrado ainda.<br>Vá em <strong>Novo Trade</strong> para começar!</div></div>;
+  } else {
+    document.getElementById('tradesList').innerHTML = trades.map((t, i) => `
+      <div class="trade-card ${t.resultado > 0 ? 'win' : 'loss'}">
+        <div class="trade-header">
+          <div>
+            <div class="trade-num">#${trades.length - i}</div>
+            <div>
+              <span class="trade-asset">${t.ativo}</span>
+              <span class="trade-dir ${t.direcao === 'LONG' ? 'long' : 'short'}">${t.direcao}</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="trade-result ${t.
+[02/05/2026 23:29] Fabio Lopes: resultado > 0 ? 'win' : 'loss'}">${t.resultado > 0 ? '+' : ''}R$${t.resultado}</div>
+            <button class="trade-delete" onclick="deleteTrade(${t.id})">×</button>
+          </div>
+        </div>
+        <div class="trade-meta">
+          <div class="trade-meta-item">Data: <span>${t.data}</span></div>
+          <div class="trade-meta-item">TF: <span>${t.tf}</span></div>
+          ${t.entrada !== '—' ? <div class="trade-meta-item">Entrada: <span>${t.entrada}</span></div> : ''}
+        </div>
+        ${t.obs ? <div class="trade-obs">${t.obs}</div> : ''}
+      </div>
+    `).join('');
+  }
+
+  renderChart();
+}
+
+// ── CHART ──────────────────────────────────────────────────────
+function renderChart() {
+  const canvas = document.getElementById('equityChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth * window.devicePixelRatio;
+  const H = 160 * window.devicePixelRatio;
+  canvas.width = W;
+  canvas.height = H;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const w = canvas.offsetWidth, h = 160;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (trades.length === 0) {
+    ctx.fillStyle = '#5A6A85';
+    ctx.font = '13px DM Sans';
+    ctx.textAlign = 'center';
+    ctx.fillText('Registre trades para ver a curva de equity', w/2, h/2);
+    return;
+  }
+
+  const reversed = [...trades].reverse();
+  const points = [500];
+  reversed.forEach(t => points.push(points[points.length-1] + t.resultado));
+
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 10;
+  const pad = { t: 20, b: 30, l: 50, r: 10 };
+  const cw = w - pad.l - pad.r;
+  const ch = h - pad.t - pad.b;
+
+  const xOf = i => pad.l + (i / (points.length - 1)) * cw;
+  const yOf = v => pad.t + (1 - (v - min) / range) * ch;
+
+  // Grid
+  ctx.strokeStyle = '#1F2D45';
+  ctx.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(f => {
+    const y = pad.t + f * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    const val = (max - f * range).toFixed(0);
+    ctx.fillStyle = '#5A6A85';
+    ctx.font = '9px Space Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText('R$' + val, pad.l - 4, y + 3);
+  });
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ch);
+  grad.addColorStop(0, 'rgba(0,212,170,0.3)');
+  grad.addColorStop(1, 'rgba(0,212,170,0)');
+  ctx.beginPath();
+  ctx.moveTo(xOf(0), yOf(points[0]));
+  points.forEach((v, i) => i > 0 && ctx.lineTo(xOf(i), yOf(v)));
+  ctx.lineTo(xOf(points.length-1), pad.t + ch);
+  ctx.lineTo(xOf(0), pad.t + ch);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(xOf(0), yOf(points[0]));
+  points.forEach((v, i) => i > 0 && ctx.lineTo(xOf(i), yOf(v)));
+  ctx.strokeStyle = '#00D4AA';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Dots for win/loss
+  reversed.forEach((t, i) => {
+    const x = xOf(i+1), y = yOf(points[i+1]);
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI*2);
+    ctx.fillStyle = t.resultado > 0 ? '#00D4AA' : '#FF4757';
+    ctx.fill();
+  });
+
+  // R$500 baseline
+  if (min <= 500 && max >= 500) {
+    ctx.setLineDash([4,4]);
+    ctx.strokeStyle = '#5A6A85';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, yOf(500));
+    ctx.lineTo(pad.l + cw, yOf(500));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ── TOAST ──────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+window.addEventListener('resize', renderChart);
+</script>
+
+</body>
+</html>
